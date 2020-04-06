@@ -44,7 +44,8 @@ def crawlPTT(**context):
         row["timestamp"]   = post["timestamp"]
         row["description"] = post["description"]
         result.append(row)
-
+        
+    result = pd.DataFrame(result)
     result.to_sql(name=table_name, con=cursor, if_exists='replace', index=False)
 
         
