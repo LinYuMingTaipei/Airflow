@@ -29,9 +29,11 @@ def create_table(**context):
     table_name = f"HotArticle_{execution_date}"
     from tasks.ptt import create_table
     create_table(table_name)
+    return table_name
 
 
 def crawlPTT(**context):
+    table_name = context['task_instance'].xcom_pull(task_ids='create_table')
     r = requests.get(PTTUrl,headers=headers)
     posts = json.loads(r.text)
     result = list()
