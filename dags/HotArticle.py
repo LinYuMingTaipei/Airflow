@@ -24,13 +24,14 @@ headers = Variable.get("User-Agent")
 mysqlhook = MySqlHook(mysql_conn_id="PTT")
 cursor    = connection.cursor()
 
-def crawlPTT(**context):
-    execution_date = context["execution_date"]
-    table_name = f"HotArticle_{execution_date.strftime("%Y%m%d %H:%M:%S")}"
-
+def create_table(**context):
+    execution_date = context["execution_date"].strftime("%Y%m%d %H:%M:%S")
+    table_name = f"HotArticle_{execution_date}"
     from tasks.ptt import create_table
     create_table(table_name)
 
+
+def crawlPTT(**context):
     r = requests.get(PTTUrl,headers=headers)
     posts = json.loads(r.text)
     result = list()
@@ -44,15 +45,22 @@ def crawlPTT(**context):
         row["timestamp"]   = post["timestamp"]
         row["description"] = post["description"]
         result.append(row)
-        
+
     result = pd.DataFrame(result)
     result.to_sql(name=table_name, con=cursor, if_exists='replace', index=False)
 
-        
-    
+
 with DAG('HotArticle', default_args=default_args,schedule_interval='0 9 1 * *') as dag:
     crawlPTT = PythonOperator(
         task_id = 'crawlPTT',
         python_callable = crawlPTT,
         provide_context = True
     )
+
+    createTable = PythonOperator(
+        task_id = "ceateTable",
+        python_callable = ceate_table,
+        provide_context = True
+    )
+
+    createTable >> crawlPTT
